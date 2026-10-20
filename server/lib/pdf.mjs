@@ -20,8 +20,8 @@ export function buildInvoicePdf(documentId) {
           ? 'Gutschrift'
           : 'Rechnung';
 
-    doc.fillColor('#0f766e').fontSize(22).text('KlarKontor', { continued: false });
-    doc.fillColor('#111').fontSize(16).text(title, { align: 'right' });
+    doc.fillColor('#CC1F26').fontSize(22).text('KlarKontor', { continued: false });
+    doc.fillColor('#121314').fontSize(16).text(title, { align: 'right' });
     doc.moveDown(0.5);
     doc.fontSize(10).fillColor('#333');
     doc.text(company.name || '');
@@ -44,7 +44,7 @@ export function buildInvoicePdf(documentId) {
     }
 
     doc.moveDown();
-    doc.fontSize(10).fillColor('#0f766e').text('Positionen', { underline: true });
+    doc.fontSize(10).fillColor('#CC1F26').text('Positionen', { underline: true });
     doc.moveDown(0.3);
     doc.fillColor('#111');
 
