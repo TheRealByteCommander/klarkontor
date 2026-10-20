@@ -6,7 +6,7 @@
 - Products & services
 - Quotes, invoices, credit notes
 - PDF documents
-- E-invoice export (v0.1 demo UBL — **P0:** real XRechnung + real ZUGFeRD)
+- E-invoice: **XRechnung UBL/CII** + **ZUGFeRD/Factur-X** (EN 16931 & BASIC)
 - Expenses / incoming receipts
 - Banking CSV import + payment matching
 - Dunning levels & runs
@@ -55,7 +55,7 @@ npm run dev       # node --watch
 - `GET /api/health`
 - `GET /api/dashboard`
 - `GET|POST /api/contacts` · `GET|POST /api/products`
-- `GET|POST /api/documents` · `GET /api/documents/:id/pdf` · `.../xrechnung`
+- `GET|POST /api/documents` · `GET .../pdf` · `.../xrechnung-ubl` · `.../xrechnung-cii` · `.../zugferd` · `GET /api/einvoice/profiles`
 - `GET|POST /api/expenses`
 - `POST /api/bank/import` · `POST /api/bank/match`
 - `GET /api/reports/euer|vat|guv`
@@ -64,7 +64,7 @@ npm run dev       # node --watch
 ## Scope vs commercial suites
 
 KlarKontor **v0.1** covers the core daily loop for freelancers and small companies.  
-**Locked P0 (2026-10-20):** real **ZUGFeRD** (PDF/A-3 + CII), real **XRechnung** (EN 16931), and **Lexware import** (Desktop ASCII/CSV including ~2015 layouts). See [docs/PRIORITIES.md](./docs/PRIORITIES.md).  
+**P0 e-invoice (2026-10-20):** XRechnung UBL+CII and ZUGFeRD/Factur-X shipped in v0.2. **Next P0:** Lexware import (~2015 ASCII/CSV). See [docs/PRIORITIES.md](./docs/PRIORITIES.md).  
 Not yet: live bank PSD2, ELSTER filing, certified payroll, multi-company SaaS tenancy, mobile apps, full PEPPOL access points, or tax-advisor real-time collaboration.
 
 Those can grow module-by-module without rewriting the core.

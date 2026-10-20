@@ -152,8 +152,11 @@ async function renderDocuments(kind) {
                 <td>${esc(d.issue_date)}</td><td>${euro(d.gross_total)}</td>
                 <td class="row">
                   <a class="btn ghost" href="/api/documents/${d.id}/pdf" target="_blank">PDF</a>
-                  ${kind === 'invoice' ? `<a class="btn ghost" href="/api/documents/${d.id}/xrechnung" target="_blank">XRechnung</a>
-                  <button class="btn ghost" data-pay="${d.id}">Bezahlt</button>` : ''}
+                  ${kind === 'invoice' || kind === 'credit_note' ? `
+                  <a class="btn ghost" href="/api/documents/${d.id}/xrechnung-ubl" target="_blank" title="XRechnung UBL">XR-UBL</a>
+                  <a class="btn ghost" href="/api/documents/${d.id}/xrechnung-cii" target="_blank" title="XRechnung CII">XR-CII</a>
+                  <a class="btn ghost" href="/api/documents/${d.id}/zugferd" target="_blank" title="ZUGFeRD / Factur-X PDF">ZUGFeRD</a>
+                  ${kind === 'invoice' ? `<button class="btn ghost" data-pay="${d.id}">Bezahlt</button>` : ''}` : ''}
                 </td>
               </tr>`).join('') || `<tr><td colspan="6" class="muted">Keine ${label}en</td></tr>`}
           </tbody>

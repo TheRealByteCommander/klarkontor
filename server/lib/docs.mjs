@@ -64,7 +64,7 @@ export function loadDocument(id) {
   return { ...doc, items };
 }
 
-export function saveDocument({ id, kind, status, contact_id, issue_date, due_date, service_date, notes, intro, footer, items, e_invoice_profile }) {
+export function saveDocument({ id, kind, status, contact_id, issue_date, due_date, service_date, notes, intro, footer, items, e_invoice_profile, buyer_reference }) {
   const db = getDb();
   const contact = contact_id
     ? db.prepare('SELECT * FROM contacts WHERE id = ?').get(contact_id)
@@ -77,7 +77,7 @@ export function saveDocument({ id, kind, status, contact_id, issue_date, due_dat
       UPDATE documents SET
         status = ?, contact_id = ?, contact_name = ?, issue_date = ?, due_date = ?, service_date = ?,
         notes = ?, intro = ?, footer = ?, net_total = ?, tax_total = ?, gross_total = ?,
-        e_invoice_profile = ?, updated_at = datetime('now')
+        e_invoice_profile = ?, buyer_reference = ?, updated_at = datetime('now')
       WHERE id = ?
     `).run(
       status || existing.status,
@@ -93,6 +93,7 @@ export function saveDocument({ id, kind, status, contact_id, issue_date, due_dat
       totals.tax_total,
       totals.gross_total,
       e_invoice_profile || existing.e_invoice_profile || null,
+      buyer_reference !== undefined ? buyer_reference : (existing.buyer_reference || null),
       id,
     );
     db.prepare('DELETE FROM document_items WHERE document_id = ?').run(id);
@@ -105,8 +106,8 @@ export function saveDocument({ id, kind, status, contact_id, issue_date, due_dat
   const info = db.prepare(`
     INSERT INTO documents(
       kind, number, status, contact_id, contact_name, issue_date, due_date, service_date,
-      notes, intro, footer, net_total, tax_total, gross_total, e_invoice_profile
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      notes, intro, footer, net_total, tax_total, gross_total, e_invoice_profile, buyer_reference
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     kind,
     number,
@@ -123,6 +124,7 @@ export function saveDocument({ id, kind, status, contact_id, issue_date, due_dat
     totals.tax_total,
     totals.gross_total,
     e_invoice_profile || null,
+    buyer_reference || contact?.buyer_reference || contact?.leitweg_id || null,
   );
   const newId = Number(info.lastInsertRowid);
   insertItems(db, newId, totals.items);

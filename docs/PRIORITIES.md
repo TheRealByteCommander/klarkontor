@@ -33,17 +33,21 @@ Owner decision (Matthias): **echtes ZUGFeRD + echtes X-Rechnung** gehören zu de
 - Zertifizierte PEPPOL Access Point Betreiberrolle (kann später angeschlossen werden)
 - Payroll / ELSTER Submit
 
-## IST (v0.1 @ `91dc0e3`)
-- PDF: normales pdfkit-PDF (**kein** PDF/A-3, **kein** Embedded XML) → **kein ZUGFeRD**
-- E-Invoice: `server/lib/einvoice.mjs` = **minimaler UBL-Subset**, Label „XRechnung-inspired“ → **kein echtes XRechnung**
-- Lexware-Import: **fehlt**
+## IST (v0.2 e-invoice stack)
+- Shared projection: `server/lib/einvoice/projection.mjs` (EN 16931 fields, fail-closed Pflichtchecks)
+- **XRechnung UBL** + **XRechnung CII** exports
+- **ZUGFeRD / Factur-X** PDF with embedded CII (`factur-x.xml`), AF + fx XMP
+- Profiles API: `GET /api/einvoice/profiles`
+- Routes: `/api/documents/:id/{xrechnung-ubl,xrechnung-cii,zugferd,factur-x,einvoice?profile=}`
+- Lexware-Import: **noch offen** (next after e-invoice)
 - DATEV-style CSV Export: vorhanden (vereinfacht)
+- Residual e-invoice: external KOSiT/Schematron CI; full PDF/A-3b normalizer
 
 ## Next implementation slices
-1. **Domain model harden** for e-invoice (Leitweg-ID, buyer ref, unit codes UNECE, tax category codes, BT- Pflichtmapping)
-2. **CII builder** + **UBL builder** sharing one invoice projection
-3. **XRechnung validator gate** (fixture + schematron or kosit validator in CI when available)
-4. **ZUGFeRD packager**: PDF/A-3 + embed `factur-x.xml` / ZUGFeRD CII
+1. ~~Domain model harden~~ ✅
+2. ~~CII + UBL builders~~ ✅
+3. ~~ZUGFeRD packager~~ ✅ (structural)
+4. KOSiT/Schematron validator gate (optional CI binary)
 5. **Lexware ASCII import adapters** v2015-tolerant: contacts → products → bookings
 6. Sample pack: anonymisierte User-Exports 2015 + modern for golden tests
 

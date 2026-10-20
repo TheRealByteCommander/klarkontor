@@ -16,7 +16,7 @@ import {
 import { dashboard, euerReport, vatReport, guvReport } from './lib/reports.mjs';
 import { importBankCsv, autoMatchBank } from './lib/banking.mjs';
 import { buildDatevCsv } from './lib/datev.mjs';
-import { buildXRechnungXml } from './lib/einvoice.mjs';
+import { exportEInvoice, listEInvoiceProfiles } from './lib/einvoice.mjs';
 import { buildInvoicePdf } from './lib/pdf.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,7 +53,11 @@ async function handleApi(req, res, url) {
   const p = url.pathname.replace(/^\/api/, '');
 
   if (method === 'GET' && p === '/health') {
-    return json(res, 200, { ok: true, service: 'klarkontor', version: '0.1.0' });
+    return json(res, 200, { ok: true, service: 'klarkontor', version: '0.2.0' });
+  }
+
+  if (method === 'GET' && p === '/einvoice/profiles') {
+    return json(res, 200, listEInvoiceProfiles());
   }
 
   if (method === 'GET' && p === '/dashboard') {
@@ -67,6 +71,7 @@ async function handleApi(req, res, url) {
       const fields = [
         'name','legal_form','street','zip','city','country','email','phone','vat_id','tax_number',
         'iban','bic','bank_name','default_tax_rate','invoice_prefix','quote_prefix','credit_prefix','currency',
+        'electronic_address','electronic_scheme','register_court','register_number',
       ];
       const sets = [];
       const vals = [];
@@ -96,12 +101,13 @@ async function handleApi(req, res, url) {
       const b = await readJson(req);
       if (!b.name) return json(res, 400, { error: 'name required' });
       const info = db.prepare(`
-        INSERT INTO contacts(type, number, name, company_name, email, phone, street, zip, city, country, vat_id, payment_terms_days, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO contacts(type, number, name, company_name, email, phone, street, zip, city, country, vat_id, payment_terms_days, notes, buyer_reference, leitweg_id, electronic_address)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         b.type || 'customer', b.number || null, b.name, b.company_name || null, b.email || null, b.phone || null,
         b.street || null, b.zip || null, b.city || null, b.country || 'DE', b.vat_id || null,
-        b.payment_terms_days ?? 14, b.notes || null,
+        b.payment_terms_days ?? 14, b.notes || null, b.buyer_reference || null, b.leitweg_id || null,
+        b.electronic_address || b.email || null,
       );
       audit(db, 'user', 'create', 'contact', info.lastInsertRowid, b.name);
       return json(res, 201, db.prepare('SELECT * FROM contacts WHERE id=?').get(info.lastInsertRowid));
@@ -113,12 +119,14 @@ async function handleApi(req, res, url) {
     const b = await readJson(req);
     db.prepare(`
       UPDATE contacts SET type=?, number=?, name=?, company_name=?, email=?, phone=?, street=?, zip=?, city=?,
-        country=?, vat_id=?, payment_terms_days=?, notes=?, active=?, updated_at=datetime('now')
+        country=?, vat_id=?, payment_terms_days=?, notes=?, active=?, buyer_reference=?, leitweg_id=?, electronic_address=?,
+        updated_at=datetime('now')
       WHERE id=?
     `).run(
       b.type, b.number || null, b.name, b.company_name || null, b.email || null, b.phone || null,
       b.street || null, b.zip || null, b.city || null, b.country || 'DE', b.vat_id || null,
-      b.payment_terms_days ?? 14, b.notes || null, b.active ?? 1, id,
+      b.payment_terms_days ?? 14, b.notes || null, b.active ?? 1,
+      b.buyer_reference || null, b.leitweg_id || null, b.electronic_address || b.email || null, id,
     );
     return json(res, 200, db.prepare('SELECT * FROM contacts WHERE id=?').get(id));
   }
@@ -166,13 +174,37 @@ async function handleApi(req, res, url) {
       res.end(buf);
       return;
     }
-    if (parts[3] === 'xrechnung') {
-      const xml = buildXRechnungXml(id);
-      res.writeHead(200, {
-        'Content-Type': 'application/xml; charset=utf-8',
-        'Content-Disposition': `attachment; filename="xrechnung-${id}.xml"`,
-      });
-      res.end(xml);
+    // E-invoice formats: xrechnung | xrechnung-ubl | xrechnung-cii | zugferd | factur-x | einvoice?profile=
+    if (
+      parts[3] === 'xrechnung' ||
+      parts[3] === 'xrechnung-ubl' ||
+      parts[3] === 'xrechnung-cii' ||
+      parts[3] === 'zugferd' ||
+      parts[3] === 'factur-x' ||
+      parts[3] === 'einvoice'
+    ) {
+      const profileMap = {
+        xrechnung: 'xrechnung-ubl',
+        'xrechnung-ubl': 'xrechnung-ubl',
+        'xrechnung-cii': 'xrechnung-cii',
+        zugferd: 'zugferd-en16931',
+        'factur-x': 'factur-x-en16931',
+      };
+      const profile =
+        url.searchParams.get('profile') ||
+        profileMap[parts[3]] ||
+        'xrechnung-ubl';
+      try {
+        const exp = await exportEInvoice(id, profile);
+        res.writeHead(200, {
+          'Content-Type': exp.contentType,
+          'Content-Disposition': `attachment; filename="${exp.filename}"`,
+          'X-KlarKontor-EInvoice-Profile': exp.profile,
+        });
+        res.end(exp.body);
+      } catch (err) {
+        return json(res, 400, { error: err.message || String(err), profile });
+      }
       return;
     }
     const doc = loadDocument(id);

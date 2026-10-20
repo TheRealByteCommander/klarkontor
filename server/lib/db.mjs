@@ -260,6 +260,49 @@ function migrate(database) {
     database.prepare('INSERT INTO meta(key, value) VALUES(?, ?)').run('schema_version', '1');
     seedDefaults(database);
   }
+  migrateEInvoiceFields(database);
+}
+
+/** Additive columns for EN 16931 / XRechnung / ZUGFeRD (idempotent). */
+function migrateEInvoiceFields(database) {
+  const cols = (table) =>
+    new Set(database.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name));
+
+  const companyCols = cols('company');
+  const addCompany = [
+    ['electronic_address', 'TEXT'],
+    ['electronic_scheme', "TEXT DEFAULT 'EM'"],
+    ['register_court', 'TEXT'],
+    ['register_number', 'TEXT'],
+  ];
+  for (const [name, type] of addCompany) {
+    if (!companyCols.has(name)) {
+      database.exec(`ALTER TABLE company ADD COLUMN ${name} ${type}`);
+    }
+  }
+
+  const contactCols = cols('contacts');
+  const addContact = [
+    ['buyer_reference', 'TEXT'],
+    ['leitweg_id', 'TEXT'],
+    ['electronic_address', 'TEXT'],
+    ['electronic_scheme', "TEXT DEFAULT 'EM'"],
+  ];
+  for (const [name, type] of addContact) {
+    if (!contactCols.has(name)) {
+      database.exec(`ALTER TABLE contacts ADD COLUMN ${name} ${type}`);
+    }
+  }
+
+  const docCols = cols('documents');
+  if (!docCols.has('buyer_reference')) {
+    database.exec('ALTER TABLE documents ADD COLUMN buyer_reference TEXT');
+  }
+
+  const ver = database.prepare('SELECT value FROM meta WHERE key = ?').get('schema_version');
+  if (ver && Number(ver.value) < 2) {
+    database.prepare('UPDATE meta SET value = ? WHERE key = ?').run('2', 'schema_version');
+  }
 }
 
 function seedDefaults(database) {

@@ -5,8 +5,9 @@ const db = getDb();
 
 db.prepare(`
   UPDATE company SET
-    name = ?, street = ?, zip = ?, city = ?, email = ?, vat_id = ?, iban = ?, bic = ?,
-    phone = ?, updated_at = datetime('now')
+    name = ?, street = ?, zip = ?, city = ?, country = 'DE', email = ?, vat_id = ?, iban = ?, bic = ?,
+    phone = ?, tax_number = ?, electronic_address = ?, register_court = ?, register_number = ?,
+    updated_at = datetime('now')
   WHERE id = 1
 `).run(
   'ByteCommander Muster GmbH',
@@ -18,11 +19,15 @@ db.prepare(`
   'DE89370400440532013000',
   'COBADEFFXXX',
   '+49 221 000000',
+  '123/456/78901',
+  'buero@example.com',
+  'Amtsgericht Köln',
+  'HRB 12345',
 );
 
 const customer = db.prepare(`
-  INSERT INTO contacts(type, number, name, email, street, zip, city, payment_terms_days)
-  VALUES ('customer', 'K-100', 'Stadtwerke Demo AG', 'einkauf@demo.example', 'Hauptstr. 10', '10115', 'Berlin', 14)
+  INSERT INTO contacts(type, number, name, email, street, zip, city, country, vat_id, payment_terms_days, buyer_reference, electronic_address)
+  VALUES ('customer', 'K-100', 'Stadtwerke Demo AG', 'einkauf@demo.example', 'Hauptstr. 10', '10115', 'Berlin', 'DE', 'DE998877665', 14, '04011000-1234512345-06', 'einkauf@demo.example')
 `).run();
 
 const vendor = db.prepare(`

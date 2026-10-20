@@ -1,10 +1,12 @@
 {
   "name": "klarkontor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "KlarKontor — original German SME office & bookkeeping suite (invoices, e-invoices, banking match, EÜR, USt, DATEV). Not affiliated with Lexware/Haufe.",
   "type": "module",
-  "engines": { "node": ">=22.19.0" },
+  "engines": {
+    "node": ">=22.19.0"
+  },
   "scripts": {
     "start": "node server/index.mjs",
     "dev": "node --watch server/index.mjs",
@@ -14,6 +16,7 @@
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
+    "pdf-lib": "^1.17.1",
     "pdfkit": "^0.17.1"
   }
 }

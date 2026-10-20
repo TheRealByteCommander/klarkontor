@@ -33,10 +33,36 @@ try {
   const health = await j('/api/health');
   if (!health.ok) throw new Error('health');
 
+  await j('/api/company', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Smoke Firma GmbH',
+      street: 'Smokeweg 1',
+      zip: '50667',
+      city: 'Köln',
+      country: 'DE',
+      email: 'smoke@example.test',
+      vat_id: 'DE123456789',
+      iban: 'DE89370400440532013000',
+      bic: 'COBADEFFXXX',
+      electronic_address: 'smoke@example.test',
+    }),
+  });
+
   await j('/api/contacts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'Smoke Kunde', type: 'customer' }),
+    body: JSON.stringify({
+      name: 'Smoke Kunde',
+      type: 'customer',
+      street: 'Kundenweg 2',
+      zip: '10115',
+      city: 'Berlin',
+      country: 'DE',
+      email: 'kunde@example.test',
+      buyer_reference: 'smoke-ref-1',
+    }),
   });
   const contacts = await j('/api/contacts');
   const contactId = contacts[0].id;
@@ -73,9 +99,26 @@ try {
   if (!pdfRes.ok || !(pdfRes.headers.get('content-type') || '').includes('pdf')) {
     throw new Error('pdf failed');
   }
-  const xmlRes = await fetch(`${base}/api/documents/${inv.id}/xrechnung`);
-  const xml = await xmlRes.text();
-  if (!xml.includes('Invoice') || !xml.includes(inv.number)) throw new Error('xrechnung failed');
+  const ublRes = await fetch(`${base}/api/documents/${inv.id}/xrechnung-ubl`);
+  const ubl = await ublRes.text();
+  if (!ublRes.ok || !ubl.includes('Invoice') || !ubl.includes(inv.number) || !ubl.includes('xrechnung_3.0')) {
+    throw new Error('xrechnung-ubl failed');
+  }
+
+  const ciiRes = await fetch(`${base}/api/documents/${inv.id}/xrechnung-cii`);
+  const cii = await ciiRes.text();
+  if (!ciiRes.ok || !cii.includes('CrossIndustryInvoice') || !cii.includes(inv.number)) {
+    throw new Error('xrechnung-cii failed');
+  }
+
+  const zfRes = await fetch(`${base}/api/documents/${inv.id}/zugferd`);
+  const zfBuf = Buffer.from(await zfRes.arrayBuffer());
+  if (!zfRes.ok || zfBuf.subarray(0, 5).toString() !== '%PDF-' || zfBuf.length < 500) {
+    throw new Error('zugferd failed');
+  }
+
+  const profiles = await j('/api/einvoice/profiles');
+  if (!Array.isArray(profiles) || profiles.length < 4) throw new Error('profiles');
 
   console.log(JSON.stringify({
     ok: true,
@@ -83,6 +126,7 @@ try {
     dashboard_open: dash.open_receivables,
     vat_payable: vat.vat_payable,
     matched: match.matched,
+    einvoice: { ubl: ublRes.ok, cii: ciiRes.ok, zugferd_bytes: zfBuf.length, profiles: profiles.length },
   }, null, 2));
 } finally {
   child.kill('SIGTERM');
