@@ -6,7 +6,7 @@
 - Products & services
 - Quotes, invoices, credit notes
 - PDF documents
-- E-invoice export (XRechnung-inspired UBL XML)
+- E-invoice export (v0.1 demo UBL — **P0:** real XRechnung + real ZUGFeRD)
 - Expenses / incoming receipts
 - Banking CSV import + payment matching
 - Dunning levels & runs
@@ -64,6 +64,7 @@ npm run dev       # node --watch
 ## Scope vs commercial suites
 
 KlarKontor **v0.1** covers the core daily loop for freelancers and small companies.  
+**Locked P0 (2026-10-20):** real **ZUGFeRD** (PDF/A-3 + CII), real **XRechnung** (EN 16931), and **Lexware import** (Desktop ASCII/CSV including ~2015 layouts). See [docs/PRIORITIES.md](./docs/PRIORITIES.md).  
 Not yet: live bank PSD2, ELSTER filing, certified payroll, multi-company SaaS tenancy, mobile apps, full PEPPOL access points, or tax-advisor real-time collaboration.
 
 Those can grow module-by-module without rewriting the core.
